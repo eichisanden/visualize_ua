@@ -2,17 +2,24 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/woothee/woothee-go"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/woothee/woothee-go"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"regexp"
 	_ "sort"
 	_ "strconv"
-	"database/sql"
-	"log"
+	"strings"
+	"runtime"
+	"os/exec"
+	"time"
+	"text/template"
 )
 
 var (
@@ -24,23 +31,6 @@ var usage = func() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n\n[OPTIONS]\n", os.Args[0])
 	flag.PrintDefaults()
 }
-
-type dataMapType map[string]map[string]int
-type flareType struct {
-	name string
-	count int
-	children []flareType
-}
-
-var (
-	unitSet    = make(map[string]struct{}) // Use like Set. value is dummy.
-	osMap      = make(dataMapType)
-	brwsrPCMap = make(dataMapType)
-	brwsrSPMap = make(dataMapType)
-	brwsrMPMap = make(dataMapType)
-	brwsrELMap = make(dataMapType)
-	flare      = &flareType{"os", 0, []flareType{}}
-)
 
 func getOs(os, osVersion string) string {
 	if *simplify {
@@ -59,169 +49,363 @@ func getOs(os, osVersion string) string {
 
 func getBrowser(browser, version string) string {
 	if *simplify {
-		// force add version if IE
 		if browser == "Internet Explorer" {
-			browser = fmt.Sprintf("%s %s", "Internet Explorer", version)
+			browser = fmt.Sprintf("%s%s", "IE", version)
 		}
+		switch browser {
+		case "Chrome":
+		case "Firefox":
+		case "Safari":
+		case "Opera":
+		case "Sleipnir":
+			return browser
+		default:
+			if version == woothee.ValueUnknown {
+				return browser
+			}
+			return fmt.Sprintf("%s %s", browser, version)
+		}
+
 	} else if version != woothee.ValueUnknown {
 		browser = fmt.Sprintf("%s %s", browser, version)
 	}
 	return browser
 }
 
-//func putMap(dataMap dataMapType, key string, unit string) {
-//	if subMap, ok1 := dataMap[key]; ok1 {
-//		if cnt, ok2 := subMap[unit]; ok2 {
-//			subMap[unit] = cnt + 1
-//		} else {
-//			subMap[unit] = 1
-//		}
-//		dataMap[key] = subMap
-//	} else {
-//		subMap := make(map[string]int)
-//		subMap[unit] = 1
-//		dataMap[key] = subMap
-//	}
-//}
-//
-//func sortedList(m map[string]interface{}) []string {
-//	l := make([]string, len(m))
-//	i := 0
-//	for unit := range m {
-//		l[i] = unit
-//		i = i + 1
-//	}
-//	sort.Strings(l)
-//	return l
-//}
-//
-//func sortedList2(m map[string]map[string]int) []string {
-//	l := make([]string, len(m))
-//	i := 0
-//	for unit := range m {
-//		l[i] = unit
-//		i = i + 1
-//	}
-//	sort.Strings(l)
-//	return l
-//}
-//
-//func printHeader(unitList []string) {
-//	// Header
-//	fmt.Print("|Name/Keyword|Sum|Avg|")
-//	delim := "|:---|---:|---:|"
-//	for _, unit := range unitList {
-//		fmt.Printf("%s|", unit)
-//		delim = fmt.Sprintf("%s---:|", delim)
-//	}
-//	fmt.Println("")
-//	fmt.Println(delim)
-//}
-//
-//func initKeywordTotalMap(unitList []string) map[string]int {
-//	cntMap := make(map[string]int)
-//	for _, unit := range unitList {
-//		cntMap[unit] = 0
-//	}
-//	return cntMap
-//}
-//
-//func printData(dataMap map[string]map[string]int, unitList []string) {
-//	dataList := sortedList2(dataMap)
-//
-//	// Calc major total
-//	majorTotal := 0
-//	for _, data := range dataList {
-//		for _, unit := range unitList {
-//			if cnt, ok := dataMap[data][unit]; ok {
-//				majorTotal = majorTotal + cnt
-//			}
-//		}
-//	}
-//
-//	// Output indivisual row
-//	unitTotalMap := initKeywordTotalMap(unitList)
-//	for _, data := range dataList {
-//		buff := ""
-//		lineTotal := 0
-//		for _, unit := range unitList {
-//			if cnt, ok := dataMap[data][unit]; ok {
-//				lineTotal = lineTotal + cnt
-//				unitTotalMap[unit] = unitTotalMap[unit] + cnt
-//				buff = fmt.Sprintf("%s%d|", buff, cnt)
-//			} else {
-//				buff = fmt.Sprintf("%s0|", buff)
-//			}
-//		}
-//		avg := strconv.FormatFloat(float64(lineTotal)/float64(majorTotal)*100, 'f', 1, 64)
-//		fmt.Printf("|%s|%d|%s%%|%s\n", data, lineTotal, avg, buff)
-//	}
-//
-//	// Output majorTotal and unitTotal
-//	fmt.Printf("|**Sum**|%d|100%%|", majorTotal)
-//	for _, unit := range unitList {
-//		fmt.Printf("%d|", unitTotalMap[unit])
-//	}
-//	fmt.Println("")
-//}
-//
-//func print() {
-//	unitList := sortedList(unitSet)
-//
-//	fmt.Print("# OS\n\n")
-//	printHeader(unitList)
-//	printData(osMap, unitList)
-//
-//	fmt.Print("# ブラウザ(PC)\n\n")
-//	printHeader(unitList)
-//	printData(brwsrPCMap, unitList)
-//	fmt.Println("")
-//
-//	fmt.Print("# ブラウザ(スマートフォン)\n\n")
-//	printHeader(unitList)
-//	printData(brwsrSPMap, unitList)
-//	fmt.Println("")
-//
-//	fmt.Print("# ブラウザ(ガラケー)\n\n")
-//	printHeader(unitList)
-//	printData(brwsrMPMap, unitList)
-//	fmt.Println("")
-//
-//	fmt.Print("# ブラウザ(その他)\n\n")
-//	printHeader(unitList)
-//	printData(brwsrELMap, unitList)
-//}
-//
-//func printGraph() error {
-//	unitList := sortedList(unitSet)
-//
-//	f, err := os.Create("data.js")
-//	if err != nil {
-//		return err
-//	}
-//	defer f.Close()
-//	w := bufio.NewWriter(f)
-//
-//	template := `
-//	{
-//		"label": "%s",
-//		"value": %d,
-//		"color": "#2383c1"
-//	},`
-//
-//	for _, unit := range unitList {
-//		fmt.Fprintf(w, "var os_%s = [", unit)
-//		for k, v := range osMap {
-//			if c, ok := v[unit]; ok {
-//				fmt.Fprintf(w, template, k, c)
-//			}
-//		}
-//		fmt.Fprintf(w, "];\n")
-//	}
-//	w.Flush()
-//
-//	return nil
-//}
+func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
+	var qUnit = `select distinct unit from log order by unit`
+	rowsUnit, err := db.Query(qUnit)
+	if err != nil {
+		return err
+	}
+	defer rowsUnit.Close()
+
+	fmt.Fprintln(w, `<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"></head><body>`)
+	fmt.Fprintln(w, `<table>`)
+	fmt.Fprint(w, "<tr><th></th><th>all</th>")
+	for rowsUnit.Next() {
+		var unit string
+		rowsUnit.Scan(&unit)
+		fmt.Fprintf(w, "<th>%s</th>", unit)
+	}
+	fmt.Fprintln(w, "</tr>")
+
+	var qBrowser = `select distinct browser_short_name from log order by browser_short_name`
+	rowsBrowser, err := db.Query(qBrowser)
+	if err != nil {
+		return err
+	}
+	defer rowsBrowser.Close()
+
+	for rowsBrowser.Next() {
+		var browserShortName string
+		rowsBrowser.Scan(&browserShortName)
+		fmt.Fprintf(w, "<tr><td>%s</td>", browserShortName)
+
+		var qUnit2 = `select distinct unit from log order by unit`
+		rowsUnit2, err := db.Query(qUnit2)
+		if err != nil {
+			return err
+		}
+
+		var qBrowserAll = `select count(*) count from log where browser_short_name = ?`
+		rowsBrowserAll, err := db.Query(qBrowserAll, browserShortName)
+		if err != nil {
+			return err
+		}
+		for rowsBrowserAll.Next() {
+			var osAllCount int
+			rowsBrowserAll.Scan(&osAllCount)
+			fmt.Fprintf(w, "<td>%d</td>", osAllCount)
+		}
+		rowsBrowserAll.Close()
+
+		for rowsUnit2.Next() {
+			var unit string
+			rowsUnit2.Scan(&unit)
+			var qBrowserUnit = `select count(*) count from log where unit = ? and browser_short_name = ?`
+			rowsUnitBrowserCount, err := db.Query(qBrowserUnit, unit, browserShortName)
+			if err != nil {
+				return err
+			}
+			for rowsUnitBrowserCount.Next() {
+				var unitOscount int
+				rowsUnitBrowserCount.Scan(&unitOscount)
+				fmt.Fprintf(w, "<td>%d</td>", unitOscount)
+			}
+			rowsUnitBrowserCount.Close()
+		}
+		fmt.Fprintln(w, "</tr>")
+		rowsUnit.Close()
+	}
+	fmt.Fprintln(w, "</table>")
+	fmt.Fprintln(w, "</body></html>")
+	return nil
+}
+
+func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
+	var qUnit = `select distinct unit from log order by unit`
+	rowsUnit, err := db.Query(qUnit)
+	if err != nil {
+		return err
+	}
+	defer rowsUnit.Close()
+
+	fmt.Fprintln(w, `<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"></head><body>`)
+	fmt.Fprintln(w, `<table>`)
+	fmt.Fprint(w, "<tr><th></th><th>all</th>")
+	for rowsUnit.Next() {
+		var unit string
+		rowsUnit.Scan(&unit)
+		fmt.Fprintf(w, "<th>%s</th>", unit)
+	}
+	fmt.Fprintln(w, "</tr>")
+
+	var qOs = `select distinct os_short_name from log order by os_short_name`
+	rowsOs, err := db.Query(qOs)
+	if err != nil {
+		return err
+	}
+	defer rowsOs.Close()
+
+	for rowsOs.Next() {
+		var osShortName string
+		rowsOs.Scan(&osShortName)
+		fmt.Fprintf(w, "<tr><td>%s</td>", osShortName)
+
+		var qUnit2 = `select distinct unit from log order by unit`
+		rowsUnit2, err := db.Query(qUnit2)
+		if err != nil {
+			return err
+		}
+
+		var qOsAll = `select count(*) count from log where os_short_name = ?`
+		rowsOsAll, err := db.Query(qOsAll, osShortName)
+		if err != nil {
+			return err
+		}
+		for rowsOsAll.Next() {
+			var osAllCount int
+			rowsOsAll.Scan(&osAllCount)
+			fmt.Fprintf(w, "<td>%d</td>", osAllCount)
+		}
+		rowsOsAll.Close()
+
+		for rowsUnit2.Next() {
+			var unit string
+			rowsUnit2.Scan(&unit)
+			var qOsUnit = `select count(*) count from log where unit = ? and os_short_name = ?`
+			rowsUnitOsCount, err := db.Query(qOsUnit, unit, osShortName)
+			if err != nil {
+				return err
+			}
+			for rowsUnitOsCount.Next() {
+				var unitOscount int
+				rowsUnitOsCount.Scan(&unitOscount)
+				fmt.Fprintf(w, "<td>%d</td>", unitOscount)
+			}
+			rowsUnitOsCount.Close()
+		}
+		fmt.Fprintln(w, "</tr>")
+		rowsUnit.Close()
+	}
+	fmt.Fprintln(w, "</table>")
+	fmt.Fprintln(w, "</body></html>")
+	return nil
+}
+
+func outputHtml(db *sql.DB) error {
+	fp, err := os.Create("./static/index.html")
+	if err != nil {
+		return err
+	}
+	w := bufio.NewWriter(fp)
+
+	err = outputHtmlOs(db, w)
+	if err != nil {
+		return err
+	}
+	err = outputHtmlBrowser(db, w)
+	if err != nil {
+		return err
+	}
+	w.Flush()
+	fp.Close()
+	return nil
+}
+
+func outputFullJson(db *sql.DB, allCnt int) error {
+	fp, err := os.Create("graph.json")
+	if err != nil {
+		return err
+	}
+	w := bufio.NewWriter(fp)
+	fmt.Fprintf(w, `{"name": "all", "count": %d, "children": [`, allCnt)
+
+	var query = "select unit,count(*) as cnt from log group by unit"
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var unit string
+		var cnt int
+		rows.Scan(&unit, &cnt)
+		fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, unit, cnt)
+
+		var query = "select category,count(*) as cnt from log where unit=? group by category"
+
+		rows2, err := db.Query(query, unit)
+		if err != nil {
+			return err
+		}
+		defer rows2.Close()
+
+		var i2 int
+		for i2 = 0; rows2.Next(); i2++ {
+			var category string
+			var cnt2 int
+			rows2.Scan(&category, &cnt2)
+			fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, category, cnt2)
+
+			var query = "select os,count(*) as cnt from log where unit=? and category=? group by os"
+
+			rows3, err := db.Query(query, unit, category)
+			if err != nil {
+				return err
+			}
+			defer rows3.Close()
+
+			var i3 int
+			for i3 = 0; rows3.Next(); i3++ {
+				var os string
+				var cnt4 int
+				rows3.Scan(&os, &cnt4)
+				fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, os, cnt4)
+
+				var query = "select os_version,count(*) as cnt from log where unit=? and category=? and os = ? group by os_version"
+
+				rows4, err := db.Query(query, unit, category, os)
+				if err != nil {
+					return err
+				}
+				defer rows4.Close()
+
+				var i4 int
+				for i4 = 0; rows4.Next(); i4++ {
+					var osversion string
+					var cnt5 int
+					rows4.Scan(&osversion, &cnt5)
+					fmt.Fprintf(w, `{"browser": "%s", "count": %d, "children": [`, osversion, cnt5)
+
+					var query = "select browser,count(*) as cnt from log where unit=? and category=? and os=? and os_version=? group by browser"
+
+					rows5, err := db.Query(query, unit, category, os, osversion)
+					if err != nil {
+						return err
+					}
+					defer rows5.Close()
+
+					var i5 int
+					for i5 = 0; rows5.Next(); i5++ {
+						var browser string
+						var cnt6 int
+						rows5.Scan(&browser, &cnt6)
+						fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, browser, cnt6)
+
+						var query = "select version,count(*) as cnt from log where unit=? and category=? and os=? and os_version=? and browser=? group by version"
+
+						rows6, err := db.Query(query, unit, category, os, osversion, browser)
+						if err != nil {
+							return err
+						}
+						defer rows6.Close()
+
+						d6 := []string{}
+						var i6 int
+						for i6 := 0; rows6.Next(); i6++ {
+							var version string
+							var cnt7 int
+							rows6.Scan(&version, &cnt7)
+							d6 = append(d6, fmt.Sprintf(`{"name": "%s", "count": %d}`, version, cnt7))
+						}
+						fmt.Fprintln(w, strings.Join(d6, ","))
+						fmt.Fprint(w, "]}")
+						if i6 > 1 {
+							fmt.Fprintln(w, ",")
+						}
+					}
+					fmt.Fprint(w, "]}")
+					if i5 > 1 {
+						fmt.Fprintln(w, ",")
+					}
+				}
+				fmt.Fprint(w, "]}")
+				if i4 > 1 {
+					fmt.Fprintln(w, ",")
+				}
+			}
+			fmt.Fprint(w, "]}")
+			if i3 > 1 {
+				fmt.Fprintln(w, ",")
+			}
+		}
+		fmt.Fprint(w, "]}")
+		if i2 > 1 {
+			fmt.Fprintln(w, ",")
+		}
+	}
+	fmt.Fprintln(w, "]}")
+
+	w.Flush()
+	fp.Close()
+
+	return nil
+}
+
+type Data struct {
+	Name     string `json:"name"`
+	Count    int    `json:"count"`
+	Children []Data `json:"children"`
+}
+
+func outputOsJson(db *sql.DB, allCnt int) error {
+	fp, err := os.Create("./json/os.json")
+	if err != nil {
+		return err
+	}
+	w := bufio.NewWriter(fp)
+
+	d := Data{Name: "", Count: allCnt, Children: []Data{}}
+
+	var query = "select os_short_name,count(*) as cnt from log group by os_short_name"
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var osShortName string
+		var cnt int
+		rows.Scan(&osShortName, &cnt)
+		d.Children = append(d.Children, Data{Name: osShortName, Count: cnt, Children: []Data{}})
+	}
+
+	b, err := json.Marshal(d)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprint(w, string(b))
+	w.Flush()
+	fp.Close()
+
+	return nil
+}
 
 func process() error {
 	flag.Usage = usage
@@ -239,14 +423,16 @@ func process() error {
 	sqlStmt := `
 	create table log (
 	  id integer not null primary key,
-	  unit      text,
-	  name      text,
-	  category  text,
-	  os        text,
-	  osversion text,
-	  platform  text,
-	  version   text,
-	  vendor    text);
+	  unit                  text,
+	  browser               text,
+	  browser_short_name    text,
+	  category              text,
+	  os                    text,
+	  os_short_name         text,
+	  os_version            text,
+	  platform              text,
+	  version               text,
+	  vendor                text);
 	`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
@@ -256,11 +442,6 @@ func process() error {
 	if err != nil {
 		return err
 	}
-
-//	data := make(map[string] struct{})
-//	data["name"] = "all"
-//	data["count"] = 0
-//	data["children"] = make([]map[string] struct{})
 
 	allCnt := 0
 	for {
@@ -281,203 +462,80 @@ func process() error {
 				continue // Ignore err because error occurs when unknow ua come.
 			}
 
-			//os := getOs(result.Os, result.OsVersion)
-			//browser := getBrowser(result.Name, result.Version)
+			osShortName := getOs(result.Os, result.OsVersion)
+			browserShortName := getBrowser(result.Name, result.Version)
 
-			stmt, err := tx.Prepare("insert into log(unit,name,category,os,osversion,platform,version,vendor) values(?,?,?,?,?,?,?,?)")
+			stmt, err := tx.Prepare("insert into log(unit,browser,browser_short_name,category,os,os_short_name,os_version,platform,version,vendor) values(?,?,?,?,?,?,?,?,?,?)")
 			if err != nil {
 				return err
 			}
 			defer stmt.Close()
 
-			_, err = stmt.Exec(unit, result.Name, result.Category, result.Os, result.OsVersion, result.Type, result.Version, result.Vendor)
+			_, err = stmt.Exec(unit, result.Name, browserShortName, result.Category, result.Os, osShortName, result.OsVersion, result.Type, result.Version, result.Vendor)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-//			unitSet[unit] = struct{}{} // Set dummy value
-//
-//			putMap(osMap, os, unit)
-//
-//			switch result.Category {
-//			case "pc":
-//				putMap(brwsrPCMap, browser, unit)
-//			case "smartphone":
-//				putMap(brwsrSPMap, browser, unit)
-//			case "mobilephone":
-//				putMap(brwsrMPMap, browser, unit)
-//			case "appliance":
-//			case "crawler":
-//			case "misc":
-//			case "UNKNOWN":
-//				putMap(brwsrELMap, browser, unit)
-//			}
-
-//			data["count"] = data["count"] + 1
-//			for _,  d := range data["children"] {
-//				if d["name"] == unit {
-//					d["count"] = d["count"] + 1
-//				}
-//			}
-
-		// 	var isFoundCategory bool = false
-		// 	for _, savedCategory := range flare.children {
-		// 		if savedCategory.name == result.Category {
-		// 			isFoundCategory = true
-		// 			for _, savedOs := range savedCategory.children {
-		// 				if savedOs.name == os {
-		// 					var notFound = true
-		// 					for _, savedBrowser := range savedOs.children {
-		// 						if savedBrowser.name == browser {
-		// 							savedBrowser.count = savedBrowser.count + 1
-		// 							notFound = false
-		// 						}
-		// 					}
-		// 					if notFound {
-		// 						var savedBrowser = flareType{}
-		// 						savedBrowser.name = browser
-		// 						savedBrowser.count = 1
-		// 						savedOs.children = append(savedOs.children, savedBrowser)
-		// 					}
-		// 				}
-		// 			}
-		// 		}	
-		// 	}
-			
-		// 	if !isFoundCategory {
-		// 		category.children
-		// 		categoryElement := flareType{result.Category, 0, []flareType{}}
-		// 		osElement := flareType{os, 0, []flareType{}}
-		// 		brElement := flareType{browser, 1, []flareType{}}
-		// 		osElement.children = append(osElement.children, osElement.children)
-		// 		l := append(flare.children, nil)
-		// 	}
 		}
 	}
 
 	tx.Commit()
 
-	fp, err := os.Create("graph.json")
+	//outputFullJson(db, allCnt)
+	outputOsJson(db, allCnt)
+	err = outputHtml(db)
 	if err != nil {
-		return err
+		return nil
 	}
-	w := bufio.NewWriter(fp)
-	fmt.Fprintf(w, `{"name": "all", "count": %d, "children": [`, allCnt)
-//	var query = `
-//		select id,unit,name,category,os,osVersion,platform,version,vendor from log
-//	`
-	var query = `
-		select unit,count(*) as cnt from log group by unit
-	`
-	rows, err := db.Query(query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var unit      string
-		var cnt       int
-		rows.Scan(&unit, &cnt)
-		fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, unit, cnt)
+	http.Handle("/", http.FileServer(http.Dir("static")))
+	var url = "http://localhost:4000"
 
-		var query = `
-		select category,count(*) as cnt from log where unit=? group by category
-		`
-		rows2, err := db.Query(query, unit)
-		if err != nil {
-			return err
+	go func() {
+		if waitServer(url) && startBrowser(url) {
+			log.Printf("A browser window should open. If not, please visit %s", url)
+		} else {
+			log.Printf("Please open your web browser and visit %s", url)
 		}
-		defer rows2.Close()
-
-		for rows2.Next() {
-			var category string
-			var cnt2 int
-			rows2.Scan(&category, &cnt2)
-			fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, category, cnt2)
-
-			var query = `
-				select os,count(*) as cnt from log where unit=? and category=? group by os
-			`
-			rows3, err := db.Query(query, unit, category)
-			if err != nil {
-				return err
-			}
-			defer rows3.Close()
-
-			for rows3.Next() {
-				var os string
-				var cnt4 int
-				rows3.Scan(&os, &cnt4)
-				fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, os, cnt4)
-
-				var query = `
-					select osversion,count(*) as cnt from log where unit=? and category=? and os = ? group by osversion
-				`
-				rows4, err := db.Query(query, unit, category, os)
-				if err != nil {
-					return err
-				}
-				defer rows4.Close()
-
-				for rows4.Next() {
-					var osversion string
-					var cnt5 int
-					rows4.Scan(&osversion, &cnt5)
-					fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, osversion, cnt5)
-
-					var query = `
-					select name,count(*) as cnt from log where unit=? and category=? and os=? and osversion=? group by name
-					`
-
-					rows5, err := db.Query(query, unit, category, os, osversion)
-					if err != nil {
-						return err
-					}
-					defer rows5.Close()
-
-					for rows5.Next() {
-						var name string
-						var cnt6 int
-						rows5.Scan(&name, &cnt6)
-						fmt.Fprintf(w, `{"name": "%s", "count": %d, "children": [`, name, cnt6)
-
-						var query = `
-							select version,count(*) as cnt from log where unit=? and category=? and os=? and osversion=? and name=? group by version
-						`
-
-						rows6, err := db.Query(query, unit, category, os, osversion, name)
-						if err != nil {
-							return err
-						}
-						defer rows6.Close()
-
-						for rows6.Next() {
-							var version string
-							var cnt7 int
-							rows6.Scan(&version, &cnt7)
-							fmt.Fprintf(w, `{"name": "%s", "count": %d}`, version, cnt7)
-						}
-						fmt.Fprintln(w, "]},")
-					}
-					fmt.Fprintln(w, "]},")
-				}
-				fmt.Fprintln(w, "]},")
-			}
-			fmt.Fprintln(w, "]},")
-		}
-		fmt.Fprintln(w, "]},")
-	}
-	fmt.Fprintln(w, "]}")
-
-	w.Flush()
-	fp.Close()
-
-//	print()
-//	if err := printGraph(); err != nil {
-//		return err
-//	}
-
+	}()
+	http.ListenAndServe(":4000", nil)
 	return nil
+}
+
+func handler(
+	w http.ResponseWriter,
+	r *http.Request) {
+
+	t, _ := template.ParseFiles("index.html")
+	t.Execute(w, make(map[string]string))
+}
+
+func waitServer(url string) bool {
+	tries := 20
+	for tries > 0 {
+		resp, err := http.Get(url)
+		if err == nil {
+			resp.Body.Close()
+			return true
+		}
+		time.Sleep(100 * time.Millisecond)
+		tries--
+	}
+	return false
+}
+
+func startBrowser(url string) bool {
+	// try to start the browser
+	var args []string
+	switch runtime.GOOS {
+	case "darwin":
+		args = []string{"open"}
+	case "windows":
+		args = []string{"cmd", "/c", "start"}
+	default:
+		args = []string{"xdg-open"}
+	}
+	cmd := exec.Command(args[0], append(args[1:], url)...)
+	return cmd.Start() == nil
 }
 
 func main() {
