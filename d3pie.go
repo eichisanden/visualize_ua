@@ -15,7 +15,7 @@ import (
 type PieDataMap map[string]PieData
 
 type PieData struct {
-	SortOrder string      `json:"sort_order"`
+	SortOrder string      `json:"sortOrder"`
 	Content   []PieDetail `json:"content"`
 }
 
