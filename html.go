@@ -15,9 +15,9 @@ func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
 	}
 	defer rowsUnit.Close()
 
-	fmt.Fprintln(w, `<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="css/style.css"></head><body>`)
+	fmt.Fprintln(w, `<h1>ブラウザ別利用率</h1>`)
 	fmt.Fprintln(w, `<table>`)
-	fmt.Fprint(w, `<tr><th></th><th><a target="_blank" href="pie.html?target=b_all">all</a></th>`)
+	fmt.Fprint(w, `<tr><th></th><th><a target="_blank" href="pie.html?target=b_all">すべて</a></th>`)
 	for rowsUnit.Next() {
 		var unit string
 		rowsUnit.Scan(&unit)
@@ -51,7 +51,7 @@ func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
 		for rowsBrowserAll.Next() {
 			var osAllCount int
 			rowsBrowserAll.Scan(&osAllCount)
-			fmt.Fprintf(w, "<td>%d</td>", osAllCount)
+			fmt.Fprintf(w, `<td class="right">%d</td>`, osAllCount)
 		}
 		rowsBrowserAll.Close()
 
@@ -66,7 +66,7 @@ func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
 			for rowsUnitBrowserCount.Next() {
 				var unitOscount int
 				rowsUnitBrowserCount.Scan(&unitOscount)
-				fmt.Fprintf(w, "<td>%d</td>", unitOscount)
+				fmt.Fprintf(w, `<td class="right">%d</td>`, unitOscount)
 			}
 			rowsUnitBrowserCount.Close()
 		}
@@ -74,7 +74,6 @@ func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
 		rowsUnit.Close()
 	}
 	fmt.Fprintln(w, "</table>")
-	fmt.Fprintln(w, "</body></html>")
 	return nil
 }
 
@@ -86,9 +85,9 @@ func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
 	}
 	defer rowsUnit.Close()
 
-	fmt.Fprintln(w, `<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"></head><body>`)
+	fmt.Fprintln(w, `<h1>OS別利用率</h1>`)
 	fmt.Fprintln(w, `<table>`)
-	fmt.Fprint(w, `<tr><th></th><th><a target="_blank" href="pie.html?target=o_all">all</a></th>`)
+	fmt.Fprint(w, `<tr><th></th><th><a target="_blank" href="pie.html?target=o_all">すべて</a></th>`)
 	for rowsUnit.Next() {
 		var unit string
 		rowsUnit.Scan(&unit)
@@ -122,7 +121,7 @@ func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
 		for rowsOsAll.Next() {
 			var osAllCount int
 			rowsOsAll.Scan(&osAllCount)
-			fmt.Fprintf(w, "<td>%d</td>", osAllCount)
+			fmt.Fprintf(w, `<td class="right">%d</td>`, osAllCount)
 		}
 		rowsOsAll.Close()
 
@@ -137,7 +136,7 @@ func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
 			for rowsUnitOsCount.Next() {
 				var unitOscount int
 				rowsUnitOsCount.Scan(&unitOscount)
-				fmt.Fprintf(w, "<td>%d</td>", unitOscount)
+				fmt.Fprintf(w, `<td class="right">%d</td>`, unitOscount)
 			}
 			rowsUnitOsCount.Close()
 		}
@@ -145,7 +144,6 @@ func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
 		rowsUnit.Close()
 	}
 	fmt.Fprintln(w, "</table>")
-	fmt.Fprintln(w, "</body></html>")
 	return nil
 }
 
@@ -156,6 +154,8 @@ func outputHtml(db *sql.DB) error {
 	}
 	w := bufio.NewWriter(fp)
 
+	fmt.Fprintln(w, `<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="css/style.css"></head><body>`)
+
 	err = outputHtmlOs(db, w)
 	if err != nil {
 		return err
@@ -164,6 +164,9 @@ func outputHtml(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Fprintln(w, `</body></html>`)
+
 	w.Flush()
 	fp.Close()
 	return nil

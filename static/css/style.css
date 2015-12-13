@@ -1,3 +1,8 @@
 table, td, th {
-    border: solid 1px #ccc
+    border: solid 1px #ccc;
+    border-collapse: collapse;
+}
+
+td.right{
+    text-align: right;
 }
