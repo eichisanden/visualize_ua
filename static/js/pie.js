@@ -85,11 +85,5 @@ let pie = new d3pie("pieChart", {
 			"speed": 400,
 			"size": 8
 		}
-	},
-	"misc": {
-		"gradient": {
-			"enabled": true,
-			"percentage": 100
-		}
 	}
 });
