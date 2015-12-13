@@ -1,21 +1,42 @@
 'use strict';
 
+// Get query parameters
 let queries = location.search.replace('?', '').split('&'),
     query = {},
+    title = "",
+    subTitle = "",
     i = 0;
 for (i; i < queries.length; i++) {
     let v = queries[i].split("=");
     query[v[0]] = v[1];
 }
+let target = query['target']
 
-var pie = new d3pie("pieChart", {
+// Title
+let graphType = target.substring(0, 1)
+if (graphType === 'b') {
+    title = "ブラウザ利用比率"
+} else if (graphType == 'o') {
+    title = "OS利用比率"
+}
+
+// Subtitle
+let graphTarget = target.substring(2)
+if (graphTarget === 'all') {
+    subTitle = "全体"
+} else {
+    subTitle = graphTarget
+}
+
+let pie = new d3pie("pieChart", {
 	"header": {
 		"title": {
-			"text": "Os",
+			"text": title,
 			"fontSize": 24,
 			"font": "open sans"
 		},
 		"subtitle": {
+		    "text": subTitle,
 			"color": "#999999",
 			"fontSize": 12,
 			"font": "open sans"
@@ -29,10 +50,10 @@ var pie = new d3pie("pieChart", {
 		"location": "bottom-left"
 	},
 	"size": {
-		"canvasWidth": 590,
+		"canvasWidth": 650,
 		"pieOuterRadius": "90%"
 	},
-	"data": data_all[query['target']],
+	"data": data_all[target],
 	"labels": {
 		"outer": {
 			"pieDistance": 32
