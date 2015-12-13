@@ -1,0 +1,4 @@
+ua.db
+*.log
+.idea
+static/data/pie.js

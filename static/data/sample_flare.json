@@ -1,0 +1,316 @@
+{
+  "name": "all",
+  "count": 14,
+  "children": [
+    {
+      "name": "company001",
+      "count": 6,
+      "children": [
+        {
+          "name": "pc",
+          "count": 5,
+          "children": [
+            {
+              "name": "Linux",
+              "count": 1,
+              "children": [
+                {
+                  "browser": "UNKNOWN",
+                  "count": 1,
+                  "children": [
+                    {
+                      "name": "Firefox",
+                      "count": 1,
+                      "children": [
+                        {
+                          "name": "42.0",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+            {
+              "name": "Windows 10",
+              "count": 2,
+              "children": [
+                {
+                  "browser": "NT 10.0",
+                  "count": 2,
+                  "children": [
+                    {
+                      "name": "Edge",
+                      "count": 2,
+                      "children": [
+                        {
+                          "name": "UNKNOWN",
+                          "count": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+            {
+              "name": "Windows 7",
+              "count": 2,
+              "children": [
+                {
+                  "browser": "NT 6.1",
+                  "count": 2,
+                  "children": [
+                    {
+                      "name": "Internet Explorer",
+                      "count": 2,
+                      "children": [
+                        {
+                          "name": "11.0",
+                          "count": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "smartphone",
+          "count": 1,
+          "children": [
+            {
+              "name": "Android",
+              "count": 1,
+              "children": [
+                {
+                  "browser": "4.4.4",
+                  "count": 1,
+                  "children": [
+                    {
+                      "name": "Chrome",
+                      "count": 1,
+                      "children": [
+                        {
+                          "name": "46.0.2490.76",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "company002",
+      "count": 2,
+      "children": [
+        {
+          "name": "pc",
+          "count": 2,
+          "children": [
+            {
+              "name": "Windows 7",
+              "count": 2,
+              "children": [
+                {
+                  "browser": "NT 6.1",
+                  "count": 2,
+                  "children": [
+                    {
+                      "name": "Internet Explorer",
+                      "count": 2,
+                      "children": [
+                        {
+                          "name": "11.0",
+                          "count": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    {
+      "name": "company003",
+      "count": 1,
+      "children": [
+        {
+          "name": "pc",
+          "count": 1,
+          "children": [
+            {
+              "name": "Windows 7",
+              "count": 1,
+              "children": [
+                {
+                  "browser": "NT 6.1",
+                  "count": 1,
+                  "children": [
+                    {
+                      "name": "Internet Explorer",
+                      "count": 1,
+                      "children": [
+                        {
+                          "name": "10.0",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    {
+      "name": "company004",
+      "count": 2,
+      "children": [
+        {
+          "name": "pc",
+          "count": 2,
+          "children": [
+            {
+              "name": "Windows 8.1",
+              "count": 2,
+              "children": [
+                {
+                  "browser": "NT 6.3",
+                  "count": 2,
+                  "children": [
+                    {
+                      "name": "Internet Explorer",
+                      "count": 2,
+                      "children": [
+                        {
+                          "name": "11.0",
+                          "count": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    {
+      "name": "company005",
+      "count": 1,
+      "children": [
+        {
+          "name": "pc",
+          "count": 1,
+          "children": [
+            {
+              "name": "Windows 7",
+              "count": 1,
+              "children": [
+                {
+                  "browser": "NT 6.1",
+                  "count": 1,
+                  "children": [
+                    {
+                      "name": "Internet Explorer",
+                      "count": 1,
+                      "children": [
+                        {
+                          "name": "11.0",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    {
+      "name": "company006",
+      "count": 1,
+      "children": [
+        {
+          "name": "pc",
+          "count": 1,
+          "children": [
+            {
+              "name": "Windows 7",
+              "count": 1,
+              "children": [
+                {
+                  "browser": "NT 6.1",
+                  "count": 1,
+                  "children": [
+                    {
+                      "name": "Internet Explorer",
+                      "count": 1,
+                      "children": [
+                        {
+                          "name": "11.0",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    {
+      "name": "company007",
+      "count": 1,
+      "children": [
+        {
+          "name": "smartphone",
+          "count": 1,
+          "children": [
+            {
+              "name": "iPhone",
+              "count": 1,
+              "children": [
+                {
+                  "browser": "8.1.2",
+                  "count": 1,
+                  "children": [
+                    {
+                      "name": "Safari",
+                      "count": 1,
+                      "children": [
+                        {
+                          "name": "8.0",
+                          "count": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
