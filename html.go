@@ -1,7 +1,8 @@
 package main
+
 import (
-	"database/sql"
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 )

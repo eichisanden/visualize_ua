@@ -4,29 +4,43 @@ package main
 // http://d3pie.org/
 
 import (
-	"database/sql"
-	"os"
 	"bufio"
-	"fmt"
+	"database/sql"
 	"encoding/json"
+	"fmt"
+	"os"
+	"math/rand"
 )
 
-type PieDataMap map[string] PieData
+type PieDataMap map[string]PieData
 
 type PieData struct {
-	SortOrder string     `json:"sort_order"`
-	Content []PieDetail  `json:"content"`
+	SortOrder string      `json:"sort_order"`
+	Content   []PieDetail `json:"content"`
 }
 
 type PieDetail struct {
-	Label string  `json:"label"`
-	Value int     `json:"value"`
-	Color string  `json:"color"`
+	Label string `json:"label"`
+	Value int    `json:"value"`
+	Color string `json:"color"`
 }
 
 type ResultSet struct {
-	Name string
+	Name  string
 	Count int
+}
+
+var colors = []string{
+	"#1f77b4", "#aec7e8",
+	"#ff7f0e", "#ffbb78",
+	"#2ca02c", "#98df8a",
+	"#d62728", "#ff9896",
+	"#9467bd", "#c5b0d5",
+	"#8c564b", "#c49c94",
+	"#e377c2", "#f7b6d2",
+	"#7f7f7f", "#c7c7c7",
+	"#bcbd22", "#dbdb8d",
+	"#17becf", "#9edae5",
 }
 
 func outputD3pieJson(db *sql.DB) error {
@@ -56,7 +70,7 @@ func outputD3pieJson(db *sql.DB) error {
 	for rows.Next() {
 		var result = ResultSet{}
 		rows.Scan(&result.Name, &result.Count)
-		p.Content = append(p.Content, PieDetail{result.Name, result.Count, "#F00"})
+		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[rand.Intn(19)]})
 	}
 	rows.Close()
 
@@ -76,7 +90,7 @@ func outputD3pieJson(db *sql.DB) error {
 	for rows.Next() {
 		var result = ResultSet{}
 		rows.Scan(&result.Name, &result.Count)
-		p.Content = append(p.Content, PieDetail{result.Name, result.Count, "#F00"})
+		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[rand.Intn(19)]})
 	}
 	rows.Close()
 
@@ -93,5 +107,3 @@ func outputD3pieJson(db *sql.DB) error {
 
 	return nil
 }
-
-

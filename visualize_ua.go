@@ -137,16 +137,14 @@ func process() error {
 	tx.Commit()
 
 	if err = outputHtml(db); err != nil {
-		return nil
+		return err
 	}
 	if err = outputD3pieJson(db); err != nil {
-		return nil
+		return err
 	}
 
 	return nil
 }
-
-
 
 func main() {
 	if err := process(); err != nil {

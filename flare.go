@@ -1,10 +1,11 @@
 package main
+
 import (
-	"database/sql"
-	"os"
 	"bufio"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 )
 
 //func outputFullJson(db *sql.DB, allCnt int) error {
