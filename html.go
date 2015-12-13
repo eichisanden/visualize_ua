@@ -21,7 +21,7 @@ func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
 	for rowsUnit.Next() {
 		var unit string
 		rowsUnit.Scan(&unit)
-		fmt.Fprintf(w, "<th>%s</th>", unit)
+		fmt.Fprintf(w, `<th><a target="_blank" href="pie.html?target=b_%s">%s</a></th>`, unit, unit)
 	}
 	fmt.Fprintln(w, "</tr>")
 
@@ -92,7 +92,7 @@ func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
 	for rowsUnit.Next() {
 		var unit string
 		rowsUnit.Scan(&unit)
-		fmt.Fprintf(w, "<th>%s</th>", unit)
+		fmt.Fprintf(w, `<th><a target="_blank" href="pie.html?target=o_%s">%s</a></th>`, unit, unit)
 	}
 	fmt.Fprintln(w, "</tr>")
 

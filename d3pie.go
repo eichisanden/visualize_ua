@@ -42,23 +42,54 @@ var colors = []string{
 	"#17becf", "#9edae5",
 }
 
-func makeD3pieJson(db *sql.DB, keyColumn string) (*PieData, error) {
+func makeD3pieJson(db *sql.DB, keyColumn, unit string) (*PieData, error) {
 	var p = PieData{SortOrder: "value-desc", Content: []PieDetail{}}
 
-	var query = fmt.Sprintf("SELECT %s, count(*) AS count FROM log GROUP BY %s", keyColumn, keyColumn)
+	var where string = ""
+	if unit != "" {
+		where = fmt.Sprintf("WHERE unit = '%s'", unit)
+	}
+
+	var query = fmt.Sprintf("SELECT %s, count(*) AS count FROM log %s GROUP BY %s", keyColumn, where, keyColumn)
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
 		var result = ResultSet{}
 		rows.Scan(&result.Name, &result.Count)
 		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[i % 20]})
 	}
-	rows.Close()
 
 	return &p, nil
+}
+
+func makeD3pieUnitJson(db *sql.DB, pMap PieDataMap) error {
+	var query = "SELECT DISTINCT unit FROM log"
+	rows, err := db.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for i := 0; rows.Next(); i++ {
+		var unit string
+		rows.Scan(&unit)
+
+		pMap[fmt.Sprintf("o_%s", unit)], err = makeD3pieJson(db, "os_short_name", unit)
+		if err != nil {
+			return err
+		}
+
+		pMap[fmt.Sprintf("b_%s", unit)], err = makeD3pieJson(db, "browser_short_name", unit)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func outputD3pieJson(db *sql.DB) error {
@@ -77,7 +108,7 @@ func outputD3pieJson(db *sql.DB) error {
 	// ----------------------------------
 	// OS all
 	// ----------------------------------
-	pMap["o_all"], err = makeD3pieJson(db, "os_short_name")
+	pMap["o_all"], err = makeD3pieJson(db, "os_short_name", "")
 	if err != nil {
 		return err
 	}
@@ -85,7 +116,15 @@ func outputD3pieJson(db *sql.DB) error {
 	// ----------------------------------
 	// Browser all
 	// ----------------------------------
-	pMap["b_all"], err = makeD3pieJson(db, "browser_short_name")
+	pMap["b_all"], err = makeD3pieJson(db, "browser_short_name", "")
+	if err != nil {
+		return err
+	}
+
+	// ----------------------------------
+	// OS and browser by unit
+	// ----------------------------------
+	err = makeD3pieUnitJson(db, pMap)
 	if err != nil {
 		return err
 	}
