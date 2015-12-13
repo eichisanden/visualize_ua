@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"math/rand"
 )
 
 type PieDataMap map[string]PieData
@@ -67,10 +66,10 @@ func outputD3pieJson(db *sql.DB) error {
 		return err
 	}
 
-	for rows.Next() {
+	for i := 0; rows.Next(); i++ {
 		var result = ResultSet{}
 		rows.Scan(&result.Name, &result.Count)
-		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[rand.Intn(19)]})
+		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[i % 20]})
 	}
 	rows.Close()
 
@@ -87,10 +86,10 @@ func outputD3pieJson(db *sql.DB) error {
 		return err
 	}
 
-	for rows.Next() {
+	for i := 0; rows.Next(); i++ {
 		var result = ResultSet{}
 		rows.Scan(&result.Name, &result.Count)
-		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[rand.Intn(19)]})
+		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[19 - (i % 20)]})
 	}
 	rows.Close()
 
