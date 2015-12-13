@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-type PieDataMap map[string]PieData
+type PieDataMap map[string]*PieData
 
 type PieData struct {
 	SortOrder string      `json:"sortOrder"`
@@ -42,6 +42,25 @@ var colors = []string{
 	"#17becf", "#9edae5",
 }
 
+func makeD3pieJson(db *sql.DB, keyColumn string) (*PieData, error) {
+	var p = PieData{SortOrder: "value-desc", Content: []PieDetail{}}
+
+	var query = fmt.Sprintf("SELECT %s, count(*) AS count FROM log GROUP BY %s", keyColumn, keyColumn)
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; rows.Next(); i++ {
+		var result = ResultSet{}
+		rows.Scan(&result.Name, &result.Count)
+		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[i % 20]})
+	}
+	rows.Close()
+
+	return &p, nil
+}
+
 func outputD3pieJson(db *sql.DB) error {
 
 	fp, err := os.Create("./static/data/pie.js")
@@ -58,42 +77,18 @@ func outputD3pieJson(db *sql.DB) error {
 	// ----------------------------------
 	// OS all
 	// ----------------------------------
-	var p = PieData{SortOrder: "value-desc", Content: []PieDetail{}}
-
-	var query = "select os_short_name,count(*) as cnt from log group by os_short_name"
-	rows, err := db.Query(query)
+	pMap["o_all"], err = makeD3pieJson(db, "os_short_name")
 	if err != nil {
 		return err
 	}
-
-	for i := 0; rows.Next(); i++ {
-		var result = ResultSet{}
-		rows.Scan(&result.Name, &result.Count)
-		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[i % 20]})
-	}
-	rows.Close()
-
-	pMap["o_all"] = p
 
 	// ----------------------------------
 	// Browser all
 	// ----------------------------------
-	p = PieData{SortOrder: "value-desc", Content: []PieDetail{}}
-
-	query = "select browser_short_name,count(*) as cnt from log group by browser_short_name"
-	rows, err = db.Query(query)
+	pMap["b_all"], err = makeD3pieJson(db, "browser_short_name")
 	if err != nil {
 		return err
 	}
-
-	for i := 0; rows.Next(); i++ {
-		var result = ResultSet{}
-		rows.Scan(&result.Name, &result.Count)
-		p.Content = append(p.Content, PieDetail{result.Name, result.Count, colors[19 - (i % 20)]})
-	}
-	rows.Close()
-
-	pMap["b_all"] = p
 
 	// Output JSON File
 	b, err := json.Marshal(pMap)
