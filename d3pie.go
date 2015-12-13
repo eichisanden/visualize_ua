@@ -42,13 +42,9 @@ var colors = []string{
 	"#17becf", "#9edae5",
 }
 
-func makeD3pieJson(db *sql.DB, keyColumn, unit string) (*PieData, error) {
+// makeD3pieJson makes JSON data.
+func makeD3pieJson(db *sql.DB, keyColumn, where string) (*PieData, error) {
 	var p = PieData{SortOrder: "value-desc", Content: []PieDetail{}}
-
-	var where string = ""
-	if unit != "" {
-		where = fmt.Sprintf("WHERE unit = '%s'", unit)
-	}
 
 	var query = fmt.Sprintf("SELECT %s, count(*) AS count FROM log %s GROUP BY %s", keyColumn, where, keyColumn)
 	rows, err := db.Query(query)
@@ -66,7 +62,8 @@ func makeD3pieJson(db *sql.DB, keyColumn, unit string) (*PieData, error) {
 	return &p, nil
 }
 
-func makeD3pieUnitJson(db *sql.DB, pMap PieDataMap) error {
+// makeD3pieJsonRow makes JSON data by column.
+func makeD3pieJsonCol(db *sql.DB, pMap PieDataMap, col string) error {
 	var query = "SELECT DISTINCT unit FROM log"
 	rows, err := db.Query(query)
 	if err != nil {
@@ -75,15 +72,12 @@ func makeD3pieUnitJson(db *sql.DB, pMap PieDataMap) error {
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
-		var unit string
-		rows.Scan(&unit)
+		var val string
+		rows.Scan(&val)
 
-		pMap[fmt.Sprintf("o_%s", unit)], err = makeD3pieJson(db, "os_short_name", unit)
-		if err != nil {
-			return err
-		}
+		var where = fmt.Sprintf("WHERE unit = '%s'", val)
 
-		pMap[fmt.Sprintf("b_%s", unit)], err = makeD3pieJson(db, "browser_short_name", unit)
+		pMap[fmt.Sprintf("%s_%s", col[0:1], val)], err = makeD3pieJson(db, col, where)
 		if err != nil {
 			return err
 		}
@@ -92,6 +86,31 @@ func makeD3pieUnitJson(db *sql.DB, pMap PieDataMap) error {
 	return nil
 }
 
+// makeD3pieJsonRow makes JSON data by row.
+func makeD3pieJsonRow(db *sql.DB, pMap PieDataMap, col string) error {
+	var query = fmt.Sprintf("SELECT DISTINCT %s FROM log", col)
+	rows, err := db.Query(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for i := 0; rows.Next(); i++ {
+		var val string
+		rows.Scan(&val)
+
+		var where = fmt.Sprintf("WHERE %s = '%s'", col, val)
+
+		pMap[fmt.Sprintf("%s_%s", col[0:1], val)], err = makeD3pieJson(db, "unit", where)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// outputD3pieJson makes JSON file for d3pie.js
 func outputD3pieJson(db *sql.DB) error {
 
 	fp, err := os.Create("./static/data/pie.js")
@@ -106,7 +125,7 @@ func outputD3pieJson(db *sql.DB) error {
 	var pMap = make(PieDataMap)
 
 	// ----------------------------------
-	// OS all
+	// OS利用率（すべて）
 	// ----------------------------------
 	pMap["o_all"], err = makeD3pieJson(db, "os_short_name", "")
 	if err != nil {
@@ -114,7 +133,7 @@ func outputD3pieJson(db *sql.DB) error {
 	}
 
 	// ----------------------------------
-	// Browser all
+	// Browser利用率（すべて）
 	// ----------------------------------
 	pMap["b_all"], err = makeD3pieJson(db, "browser_short_name", "")
 	if err != nil {
@@ -122,9 +141,33 @@ func outputD3pieJson(db *sql.DB) error {
 	}
 
 	// ----------------------------------
-	// OS and browser by unit
+	// OS利用率(unit別)
 	// ----------------------------------
-	err = makeD3pieUnitJson(db, pMap)
+	err = makeD3pieJsonCol(db, pMap, "os_short_name")
+	if err != nil {
+		return err
+	}
+
+	// ----------------------------------
+	// Browser利用率(unit別)
+	// ----------------------------------
+	err = makeD3pieJsonCol(db, pMap, "browser_short_name")
+	if err != nil {
+		return err
+	}
+
+	// ----------------------------------
+	// unit割合（OS別）
+	// ----------------------------------
+	err = makeD3pieJsonRow(db, pMap, "os_short_name")
+	if err != nil {
+		return err
+	}
+
+	// ----------------------------------
+	// unit割合（ブラウザ別）
+	// ----------------------------------
+	err = makeD3pieJsonRow(db, pMap, "browser_short_name")
 	if err != nil {
 		return err
 	}

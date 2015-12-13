@@ -35,7 +35,7 @@ func outputHtmlBrowser(db *sql.DB, w *bufio.Writer) error {
 	for rowsBrowser.Next() {
 		var browserShortName string
 		rowsBrowser.Scan(&browserShortName)
-		fmt.Fprintf(w, "<tr><td>%s</td>", browserShortName)
+		fmt.Fprintf(w, `<tr><td><a target="_blank" href="pie.html?target=b_%s">%s</a></td>`, browserShortName, browserShortName)
 
 		var qUnit2 = `select distinct unit from log order by unit`
 		rowsUnit2, err := db.Query(qUnit2)
@@ -106,7 +106,7 @@ func outputHtmlOs(db *sql.DB, w *bufio.Writer) error {
 	for rowsOs.Next() {
 		var osShortName string
 		rowsOs.Scan(&osShortName)
-		fmt.Fprintf(w, "<tr><td>%s</td>", osShortName)
+		fmt.Fprintf(w, `<tr><td><a target="_blank" href="pie.html?target=o_%s">%s</a></td>`, osShortName, osShortName)
 
 		var qUnit2 = `select distinct unit from log order by unit`
 		rowsUnit2, err := db.Query(qUnit2)

@@ -8,7 +8,7 @@ let queries = location.search.replace('?', '').split('&'),
     i = 0;
 for (i; i < queries.length; i++) {
     let v = queries[i].split("=");
-    query[v[0]] = v[1];
+    query[v[0]] = decodeURIComponent(v[1]);
 }
 let target = query['target']
 
