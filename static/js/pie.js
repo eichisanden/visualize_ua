@@ -79,6 +79,11 @@ let pie = new d3pie("pieChart", {
 			"enabled": true
 		}
 	},
+	"tooltips": {
+		"enabled": true,
+	    	"type": "placeholder",
+		"string": "{label}: {value}, {percentage}%"
+	},
 	"effects": {
 		"pullOutSegmentOnClick": {
 			"effect": "linear",
